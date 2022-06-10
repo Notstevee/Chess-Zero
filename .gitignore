@@ -1,0 +1,4 @@
+/.venv
+/pyvenv.cfg
+/temp.py
+/__pycache__
