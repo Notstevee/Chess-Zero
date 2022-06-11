@@ -1,6 +1,7 @@
 import chess
 import numpy as np
 
+
 def ReturnArrLoc(uci,stack,colour):
     stack=stack[:,::-1,::-1]
     StrUCI=str(uci)
@@ -47,7 +48,7 @@ def ReturnArrLoc(uci,stack,colour):
 
 
 def InputFeature(history):
-    
+
     layord="PBNRQKpbnrqk"
     if history[0]=='':
         history.pop(0)
@@ -69,7 +70,7 @@ def InputFeature(history):
         
         if fen[:4] in fenlist:
             repicount=fenlist.count(fen[:4])
-            print(repicount)
+            #print(repicount)
         else:
             repicount=0
         fenlist.append(fen[:4])
@@ -136,7 +137,7 @@ def InputFeature(history):
             stack=stack[:,::-1,::-1]
     stack=np.transpose(stack,(2,1,0))            
     stack=np.expand_dims(stack,axis=0)
+
     return stack
        
-
 
