@@ -36,43 +36,39 @@ class tree:
         return tree.totalval/tree.visit+0.25*self.P*np.sqrt(tree.visit)/(1+tree.visit)#2*np.sqrt(np.log(parentvisit)/tree.visit)
 
     def expand(self,history):
-        tempboard=chess.Board()
-        #print(lastmoves)
-        for i in history:
-            if i=='':
-                continue
-        
-            tempboard.push_uci(i)
-        fen=str(tempboard.fen)[34:].rstrip("')>").split()
-        
-        self.leafnodes=list(tempboard.legal_moves)
-        if self.leafnodes!=[]:
+
+
             #model=chesspy.NetTower()
-            stack=FEN.InputFeature(history)#,fen[1])
-            policy,value=model.predict(stack)
-            policy=np.transpose(policy[0],(2,1,0))
-
-            
-            PolicyVal=[]
-            for i in self.leafnodes:
-                PolicyVal.append(policy[FEN.ReturnArrLoc(str(i),stack,fen[1])])
-
-
-            PolicyVal=PolicyVal/np.sum(PolicyVal)
-
-            
+            stack,fen=FEN.InputFeature(history)#,fen[1])
             
 
-            #print(list(tempboard.legal_moves))
-            for i in range(len(self.leafnodes)):
-                self.leafnodes[i]=tree(str(self.leafnodes[i]),depth=self.depth+1,P=PolicyVal[i])
-            return self.leafnodes
-            #history=self.history+[str(self.leafnodes[i])],
-        else: return []
+            tempboard=chess.Board(fen)
+            self.leafnodes=list(tempboard.legal_moves)
+            if self.leafnodes!=[]:
+
+                policy,value=model.predict(stack)
+                policy=np.transpose(policy[0],(2,1,0))
+                PolicyVal=[]
+                fen=fen.split()
+                for i in self.leafnodes:
+                    PolicyVal.append(policy[FEN.ReturnArrLoc(str(i),stack,fen[1])])
+
+
+                PolicyVal=PolicyVal/np.sum(PolicyVal)
+
+            
+            
+
+                #print(list(tempboard.legal_moves))
+                for i in range(len(self.leafnodes)):
+                    self.leafnodes[i]=tree(str(self.leafnodes[i]),depth=self.depth+1,P=PolicyVal[i])
+                return self.leafnodes
+                #history=self.history+[str(self.leafnodes[i])],
+            else: return []
     
     def roll(self,lastmoves):
         #model=chesspy.NetTower()
-        policy,value=model.predict(FEN.InputFeature(lastmoves))
+        policy,value=model.predict(FEN.InputFeature(lastmoves)[0])
 
         return value
         """rollboard=chess.Board()
@@ -111,7 +107,6 @@ class tree:
         if self.leafnodes==[] and self.depth<maxdepth+offset:
             if not self.visit:
                 self.expand(lastmoves+[self.move])
-                temp=[]
                 return 0
           
 
@@ -131,7 +126,7 @@ class tree:
                         temp.append(self.PUCT(tree=i,parentvisit=self.visit))
                     m=self.leafnodes[temp.index(max(temp))].traverse(lastmoves+[self.move],offset=offset)
                     if not m==0:
-                        self.totalval+=m
+                        self.totalval=self.totalval+m
                         self.visit+=1
                     return m
                 else:

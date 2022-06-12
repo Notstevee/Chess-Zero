@@ -48,28 +48,32 @@ def ReturnArrLoc(uci,stack,colour):
 
 
 def InputFeature(history):
-
     layord="PBNRQKpbnrqk"
     if history[0]=='':
         history.pop(0)
     curr=chess.Board()
 
-    if len(history)<8:
-        stack=np.zeros((14*(8-len(history)),8,8))
+
+    if len(history)<15:
+        if len(history)==0:
+            stack=np.zeros((14*8,8,8))
+        else:
+            stack=np.zeros((14*(8-(len(history)+1)//2),8,8))
     else:
         stack=np.array(())
     fenlist=[]
-    for i in history[:-8]:
+    for i in history:
 
         curr.push_uci(i)
         fen=str(curr.fen)[34:].rstrip("')>").split()
         fenlist.append(fen[:4])
-    for i in history[-8:]:
-        curr.push_uci(i)
-        fen=str(curr.fen)[34:].rstrip("')>").split()
+    last8=(fenlist[:-16:-2])[::-1]
+    lenlast8=len(last8)
+    for fen in last8:
+
         
-        if fen[:4] in fenlist:
-            repicount=fenlist.count(fen[:4])
+        if fen in fenlist[:-(lenlast8*2-1)]:
+            repicount=fenlist[:-(lenlast8*2-1)].count(fen)
             #print(repicount)
         else:
             repicount=0
@@ -102,6 +106,7 @@ def InputFeature(history):
             stack=tempstack
         else:
             stack=np.vstack((stack,tempstack))
+        lenlast8-=1
     fen=str(curr.fen)[34:].rstrip("')>").split()    
     if fen[1]=='w':
         stack=np.vstack((stack,np.zeros((1,8,8))))
@@ -137,7 +142,8 @@ def InputFeature(history):
             stack=stack[:,::-1,::-1]
     stack=np.transpose(stack,(2,1,0))            
     stack=np.expand_dims(stack,axis=0)
+    
 
-    return stack
+    return stack,str(curr.fen)[34:].rstrip("')>")
        
 
