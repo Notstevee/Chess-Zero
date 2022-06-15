@@ -54,7 +54,7 @@ def NetTower():
     x=tf.keras.layers.Activation(tf.keras.activations.relu)(x)
 
 
-    for i in range(4):
+    for i in range(9):
         x=ResidualBlock(x)
     policy,value=PolicyHead(x),ValueHead(x)
     model=tf.keras.Model(inputs=input,outputs=[policy,value])

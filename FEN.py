@@ -2,15 +2,12 @@ import chess
 import numpy as np
 
 
-def ReturnArrLoc(uci,stack,colour):
-    stack=stack[:,::-1,::-1]
+def ReturnArrLoc(uci):
     StrUCI=str(uci)
     OC,OR,NC,NR=ord(StrUCI[0])-97,8-int(StrUCI[1]),ord(StrUCI[2])-97,8-int(StrUCI[3])
     diffC=NC-OC
     diffR=NR-OR
     layer,row,col=0,OR,OC
-    if colour=="b":
-        stack=stack[:,::-1,::-1]
     if len(StrUCI)>4 and not StrUCI[4]=='q':
         Prom=StrUCI[4]
         piece='rbn'
@@ -100,7 +97,7 @@ def InputFeature(history):
             tempstack=np.vstack((tempstack,np.vstack((np.zeros((1,8,8)),np.ones((1,8,8))))))
         if repicount==2:
             tempstack=np.vstack((tempstack,np.vstack((np.ones((1,8,8)),np.zeros((1,8,8))))))
-        if repicount==3:
+        if repicount>=3:
             tempstack=np.vstack((tempstack,np.vstack((np.ones((1,8,8)),np.ones((1,8,8))))))
         if not stack.size>0:
             stack=tempstack

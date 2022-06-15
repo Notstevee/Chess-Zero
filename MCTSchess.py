@@ -8,9 +8,13 @@ import FEN
 import tensorflow as tf
 import time
 
-maxdepth=30
+
 model=chesspy.NetTower()
 class tree:
+    @staticmethod
+    def maxdepth():
+        return 100
+
     def __init__(self,move='',totalval=0,visit=0,leafnodes=[],depth=0,P=0):
         self.totalval=totalval
         self.visit=visit
@@ -51,7 +55,7 @@ class tree:
                 PolicyVal=[]
                 fen=fen.split()
                 for i in self.leafnodes:
-                    PolicyVal.append(policy[FEN.ReturnArrLoc(str(i),stack,fen[1])])
+                    PolicyVal.append(policy[FEN.ReturnArrLoc(str(i))])
 
 
                 PolicyVal=PolicyVal/np.sum(PolicyVal)
@@ -104,10 +108,10 @@ class tree:
             return 0"""
 
     def traverse(self,lastmoves=[],offset=0):
-        if self.leafnodes==[] and self.depth<maxdepth+offset:
+        if self.leafnodes==[] and self.depth<self.maxdepth()+offset:
             if not self.visit:
                 self.expand(lastmoves+[self.move])
-                return 0
+                return 1e-20
           
 
 
@@ -120,11 +124,14 @@ class tree:
             else:
                 
                 
-                if self.depth<maxdepth+offset:
+                if self.depth<self.maxdepth()+offset:
                     temp=[]
                     for i in self.leafnodes:
                         temp.append(self.PUCT(tree=i,parentvisit=self.visit))
-                    m=self.leafnodes[temp.index(max(temp))].traverse(lastmoves+[self.move],offset=offset)
+                    if all(temp):
+                        m=self.leafnodes[temp.index(max(temp))].traverse(lastmoves+[self.move],offset=offset)
+                    else:
+                        m=self.leafnodes[np.random.randint(len(temp))].traverse(lastmoves+[self.move],offset=offset)
                     if not m==0:
                         self.totalval=self.totalval+m
                         self.visit+=1
@@ -195,7 +202,7 @@ print(p.variations)
 print(p)
 print(p.board())"""
 
-a=tree()
+'''a=tree()
 
 offset=0
 i=1
@@ -206,7 +213,7 @@ while True:
         a.traverse(offset=offset)
         print(a.visit)
         print(time.time()-sa)
-        
+    print(a)
 
     a.SelfChooseMove(offset)
     offset+=1
@@ -217,4 +224,4 @@ while True:
 
   
 
-print(a)
+print(a)'''
