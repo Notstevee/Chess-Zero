@@ -141,6 +141,6 @@ def InputFeature(history):
     stack=np.expand_dims(stack,axis=0)
     
 
-    return stack,str(curr.fen)[34:].rstrip("')>")
+    return stack,str(curr.fen)[34:].rstrip("')>"),curr.outcome()
        
 

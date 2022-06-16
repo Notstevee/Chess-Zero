@@ -43,7 +43,7 @@ class tree:
 
 
             #model=chesspy.NetTower()
-            stack,fen=FEN.InputFeature(history)#,fen[1])
+            stack,fen,state=FEN.InputFeature(history)#,fen[1])
             
 
             tempboard=chess.Board(fen)
