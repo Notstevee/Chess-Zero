@@ -35,7 +35,7 @@ class Trainer(MCTSchess.tree):
                 pi.append(i.visit)
                 mask.append(FEN.ReturnArrLoc(i.move))
 
-            inputstack,gamestate=FEN.InputFeature(history+[self.move])
+            inputstack,gamestate,state=FEN.InputFeature(history+[self.move])
             output=[pi,mask,inputstack]
             
 
@@ -47,13 +47,13 @@ class Trainer(MCTSchess.tree):
             del self.leafnodes
             self.leafnodes=k
             print(k[0].move)
-            return output,gamestate
+            return output,gamestate,state
 
     def expand(self,history):
 
 
             #model=chesspy.NetTower()
-            stack,fen=FEN.InputFeature(history)#,fen[1])
+            stack,fen,state=FEN.InputFeature(history)#,fen[1])
             
 
             tempboard=chess.Board(fen)
@@ -87,7 +87,7 @@ def TrainGame():
     offset=0
     i=1
     while game:
-        while curr.visit<800*i:
+        while curr.visit<10*i:
             mm=time.time()
             curr.traverse(offset=offset)
             print(time.time()-mm,offset)
@@ -96,10 +96,24 @@ def TrainGame():
         print(k)
         offset+=1
         i+=1
-        if offset>512: #or gameend
+        z=None
+        if  k[-1]!=None: 
+            res=k[-1].result()
+            if res=="1/2-1/2":
+                z=0
+            elif res=="1-0":
+                z=1
+            elif res=="0-1":
+                z=-1
             game=False
-            #read game result
-            #store game val
+            pass
+        if offset>512 or k[0][2][0,7,7,118]>100 or (k[0][2][0,7,7,110] and k[0][2][0,7,7,111]):
+            z=0
+            game=False
+        if z!=None:
+
+            print(z)
+            break
 
 TrainGame()
 
