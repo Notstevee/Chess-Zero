@@ -4,6 +4,7 @@ import chesspy
 import chess
 import numpy as np
 import time
+import tensorflow as tf
 
 
 model=chesspy.NetTower()
@@ -80,14 +81,49 @@ class Trainer(MCTSchess.tree):
                 #history=self.history+[str(self.leafnodes[i])],
             else: return []
 
+# The following functions can be used to convert a value to a type compatible
+# with tf.train.Example.
+
+def _bytes_feature(value):
+  """Returns a bytes_list from a string / byte."""
+  if isinstance(value, type(tf.constant(0))):
+    value = value.numpy() # BytesList won't unpack a string from an EagerTensor.
+  return tf.train.Feature(bytes_list=tf.train.BytesList(value=[value]))
+
+def _float_feature(value):
+  """Returns a float_list from a float / double."""
+  return tf.train.Feature(float_list=tf.train.FloatList(value=[value]))
+
+def _int64_feature(value):
+  """Returns an int64_list from a bool / enum / int / uint."""
+  return tf.train.Feature(int64_list=tf.train.Int64List(value=[value]))
+
+def _serialize_array(value):
+    return tf.io.serialize_tensor(value)
+
+
+def serialize_example(pi,mask,inputstack,z):
+    feature={
+        'pi':_bytes_feature(_serialize_array(pi)),
+        'mask':_bytes_feature(_serialize_array(mask)),
+        'inputstack':_bytes_feature(_serialize_array(inputstack)),
+        'z':_float_feature(z)
+    }
+
+    proto=tf.train.Example(features=tf.train.Features(feature=feature))
+    return proto.SerializeToString()
+
+
+
 
 def TrainGame():
     game=True
     curr=Trainer()
     offset=0
     i=1
+    gamedump=[]
     while game:
-        while curr.visit<10*i:
+        while curr.visit<5*i:
             mm=time.time()
             curr.traverse(offset=offset)
             print(time.time()-mm,offset)
@@ -107,13 +143,20 @@ def TrainGame():
                 z=-1
             game=False
             pass
+        gamedump.append(k[0])
         if offset>512 or k[0][2][0,7,7,118]>100 or (k[0][2][0,7,7,110] and k[0][2][0,7,7,111]):
             z=0
             game=False
         if z!=None:
+            
+            with tf.io.TFRecordWriter("playdata.tfrecord") as writer:
+                for i in gamedump:
+                    i[1]
+                    writer.write(serialize_example(i[0],i[1],i[2],z))
 
             print(z)
-            break
+        
+
 
 TrainGame()
 
