@@ -3,6 +3,9 @@ import numpy as np
 import chess
 import tensorflow as tf
 from keras import backend
+import os
+
+
 
 
 

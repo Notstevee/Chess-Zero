@@ -107,7 +107,7 @@ def serialize_example(pi,mask,inputstack,z):
         'pi':_bytes_feature(_serialize_array(pi)),
         'mask':_bytes_feature(_serialize_array(mask)),
         'inputstack':_bytes_feature(_serialize_array(inputstack)),
-        'z':_float_feature(z)
+        'z':_int64_feature(z)
     }
 
     proto=tf.train.Example(features=tf.train.Features(feature=feature))
@@ -136,28 +136,29 @@ def TrainGame():
         if  k[-1]!=None: 
             res=k[-1].result()
             if res=="1/2-1/2":
-                z=0
+                z=0.0
             elif res=="1-0":
-                z=1
+                z=1.0
             elif res=="0-1":
-                z=-1
+                z=-1.0
             game=False
             pass
         gamedump.append(k[0])
         if offset>512 or k[0][2][0,7,7,118]>100 or (k[0][2][0,7,7,110] and k[0][2][0,7,7,111]):
-            z=0
+            z=0.0
             game=False
         if z!=None:
-            
-            with tf.io.TFRecordWriter("playdata.tfrecord") as writer:
+
+            return [gamedump,z]
+            '''with tf.io.TFRecordWriter("gamedata/playdata.tfrecord") as writer:
                 for i in gamedump:
-                    i[1]
-                    writer.write(serialize_example(i[0],i[1],i[2],z))
+                    #print(tf.cast(i[1],tf.int8),tf.cast(i[1],tf.int8).numpy())
+                    writer.write(serialize_example(tf.cast(i[0],tf.int8).numpy(),tf.cast(i[1],tf.int8).numpy(),tf.cast(i[2],tf.int8).numpy(),z))'''
 
             print(z)
         
 
 
-TrainGame()
+#TrainGame()
 
 
