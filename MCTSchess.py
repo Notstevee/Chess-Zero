@@ -9,7 +9,7 @@ import tensorflow as tf
 import time
 
 
-model=chesspy.NetTower()
+
 class tree:
     @staticmethod
     def maxdepth():
@@ -139,7 +139,7 @@ class tree:
                 else:
                     
                     m=self.roll(lastmoves)
-                    print(self.visit,"here")
+                    #print(self.visit,"here")
                     self.visit+=1
                     self.totalval+=m
                     return m

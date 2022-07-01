@@ -5,10 +5,21 @@ import chess
 import numpy as np
 import time
 import tensorflow as tf
+import os
 
+model =chesspy.NetTower()
+checkpoint=tf.train.Checkpoint(model)
+from multiprocessing import util
+checkpoint_dir = os.path.join(util.get_temp_dir(), 'ckpt')
+latest_checkpoint = tf.train.latest_checkpoint(checkpoint_dir)
+if latest_checkpoint:
+  checkpoint.restore(latest_checkpoint)
 
-model=chesspy.NetTower()
-class Trainer(MCTSchess.tree):
+class Trainer():#MCTSchess.tree):
+    @staticmethod
+    def maxdepth():
+        return 100
+        
     def __init__(self,move='',totalval=0,visit=0,leafnodes=[],depth=0,P=0):
         self.totalval=totalval
         self.visit=visit
@@ -25,6 +36,12 @@ class Trainer(MCTSchess.tree):
             self.move=move
             self.leafnodes=leafnodes
             self.depth=depth
+
+    def PUCT(self,tree,parentvisit):
+            if tree.visit==0:
+                return 0.25*self.P*np.sqrt(tree.visit)/(1+tree.visit)
+            return tree.totalval/tree.visit+0.25*self.P*np.sqrt(tree.visit)/(1+tree.visit)
+    
     def SelfChooseMove(self,offset,history=[]):
         if offset!=self.depth:
             ret=self.leafnodes[0].SelfChooseMove(offset,history=history+[self.move])
@@ -81,6 +98,49 @@ class Trainer(MCTSchess.tree):
                 #history=self.history+[str(self.leafnodes[i])],
             else: return []
 
+    def roll(self,lastmoves):
+        #model=chesspy.NetTower()
+        policy,value=model.predict(FEN.InputFeature(lastmoves)[0])
+
+        return value
+
+    def traverse(self,lastmoves=[],offset=0):
+        if self.leafnodes==[] and self.depth<self.maxdepth()+offset:
+            if not self.visit:
+                self.expand(lastmoves+[self.move])
+                return 1e-20
+          
+
+
+        else:
+            if not self.visit:
+                m=self.roll(lastmoves+[self.move])
+                self.visit+=1
+                self.totalval+=m
+                return m
+            else:
+                
+                
+                if self.depth<self.maxdepth()+offset:
+                    temp=[]
+                    for i in self.leafnodes:
+                        temp.append(self.PUCT(tree=i,parentvisit=self.visit))
+                    if all(temp):
+                        m=self.leafnodes[temp.index(max(temp))].traverse(lastmoves+[self.move],offset=offset)
+                    else:
+                        m=self.leafnodes[np.random.randint(len(temp))].traverse(lastmoves+[self.move],offset=offset)
+                    if not m==0:
+                        self.totalval=self.totalval+m
+                        self.visit+=1
+                    return m
+                else:
+                    
+                    m=self.roll(lastmoves)
+                    #print(self.visit,"here")
+                    self.visit+=1
+                    self.totalval+=m
+                    return m
+
 # The following functions can be used to convert a value to a type compatible
 # with tf.train.Example.
 
@@ -116,20 +176,21 @@ def serialize_example(pi,mask,inputstack,z):
 
 
 
-def TrainGame():
+def TrainGame(model):
     game=True
     curr=Trainer()
     offset=0
     i=1
     gamedump=[]
+    #pi,mask,input=[],[],[]
     while game:
-        while curr.visit<5*i:
+        while curr.visit<10*i:
             mm=time.time()
             curr.traverse(offset=offset)
             print(time.time()-mm,offset)
 
         k=curr.SelfChooseMove(offset)
-        print(k)
+        #print(k)
         offset+=1
         i+=1
         z=None
@@ -143,13 +204,19 @@ def TrainGame():
                 z=-1.0
             game=False
             pass
-        gamedump.append(k[0])
+        #pi.append(k[0][0])
+        #mask.append(k[0][1])
+        #input.append(k[0][2])
+        gamedump.append([k[0][0],k[0][1],k[0][2]])
         if offset>512 or k[0][2][0,7,7,118]>100 or (k[0][2][0,7,7,110] and k[0][2][0,7,7,111]):
             z=0.0
             game=False
         if z!=None:
-
-            return [gamedump,z]
+            for i in gamedump:
+                i.append(z)
+            return gamedump
+            #zlen=len(pi)
+            #return (tf.ragged.constant(pi),tf.ragged.constant(mask),input,z*np.ones([zlen]))
             '''with tf.io.TFRecordWriter("gamedata/playdata.tfrecord") as writer:
                 for i in gamedump:
                     #print(tf.cast(i[1],tf.int8),tf.cast(i[1],tf.int8).numpy())
