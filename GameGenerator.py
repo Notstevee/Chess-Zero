@@ -6,14 +6,17 @@ import numpy as np
 import time
 import tensorflow as tf
 import os
+from multiprocessing import Process,util,Pool,Queue
 
 model =chesspy.NetTower()
-checkpoint=tf.train.Checkpoint(model)
+checkpoint = tf.train.Checkpoint(model)
 from multiprocessing import util
-checkpoint_dir = os.path.join(util.get_temp_dir(), 'ckpt')
+checkpoint_dir = ".\models"
 latest_checkpoint = tf.train.latest_checkpoint(checkpoint_dir)
+
 if latest_checkpoint:
-  checkpoint.restore(latest_checkpoint)
+    print("a")
+    checkpoint.restore(latest_checkpoint).expect_partial()
 
 class Trainer():#MCTSchess.tree):
     @staticmethod
@@ -176,7 +179,7 @@ def serialize_example(pi,mask,inputstack,z):
 
 
 
-def TrainGame(model):
+def TrainGame():
     game=True
     curr=Trainer()
     offset=0

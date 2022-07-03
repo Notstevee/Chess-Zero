@@ -5,7 +5,7 @@ import tensorflow as tf
 
 strategy = tf.distribute.MultiWorkerMirroredStrategy()
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+'''os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 os.environ.pop('TF_CONFIG', None)
 if '.' not in sys.path:
   sys.path.insert(0, '.')
@@ -15,7 +15,7 @@ os.environ["TF_CONFIG"] = json.dumps({
         "ps": ["host4:port", "host5:port"]
     },
    "task": {"type": "worker", "index": 1}
-})
+})'''
 
 import chesspy
 import GameGenerator
@@ -27,7 +27,7 @@ import numpy as np
 import time
 import os
 from google.protobuf import text_format
-from multiprocessing import util
+from multiprocessing import util,Pool,cpu_count,freeze_support
 
 tnp.experimental_enable_numpy_behavior()
 
@@ -53,7 +53,7 @@ def write_filepath(filepath, task_type, task_id, cluster_spec):
         dirpath = _get_temp_dir(dirpath, task_id)
     return os.path.join(dirpath, base)
 
-checkpoint_dir = os.path.join(util.get_temp_dir(), 'ckpt')
+checkpoint_dir = ".\models"#os.path.join(util.get_temp_dir(), 'ckpt')
 
 num_epochs = 3
 num_steps_per_epoch=70
@@ -63,8 +63,7 @@ num_steps_per_epoch=70
 with strategy.scope():
     # Model building/compiling need to be within `tf.distribute.Strategy.scope`.
     model =chesspy.NetTower()
-    data=GameGenerator.TrainGame(model)
-    multi_worker_dataset = data
+
     #multi_worker_dataset = strategy.experimental_distribute_datasets_from_function(data)
     optimizer = keras.optimizers.SGD(learning_rate=0.2,momentum=0.9)
 
@@ -107,8 +106,8 @@ task_type, task_id, cluster_spec = (strategy.cluster_resolver.task_type,
 checkpoint = tf.train.Checkpoint(
     model=model, epoch=epoch, step_in_epoch=step_in_epoch)
 
-write_checkpoint_dir = write_filepath(checkpoint_dir, task_type, task_id,
-                                      cluster_spec)
+write_checkpoint_dir = '.\models'#write_filepath(checkpoint_dir, task_type, task_id,
+                                      #cluster_spec)
 checkpoint_manager = tf.train.CheckpointManager(
     checkpoint, directory=write_checkpoint_dir, max_to_keep=None)
 
@@ -116,6 +115,40 @@ checkpoint_manager = tf.train.CheckpointManager(
 latest_checkpoint = tf.train.latest_checkpoint(checkpoint_dir)
 if latest_checkpoint:
   checkpoint.restore(latest_checkpoint)
+
+
+multi_worker_dataset=[]
+
+def gamegen(que):
+    ret=GameGenerator.TrainGame()
+    que.put(ret)
+
+def log(result):
+    for i in result:
+        multi_worker_dataset.append(i)
+
+cpu=4#int(cpu_count()*0.2//1)
+
+if __name__ == '__main__':
+    '''qu=Queue()
+    pool=[]
+    ret=[]
+    for i in range(cpu):
+        process=Process(target=gamegen,args=(qu,))
+        process.start()
+        pool.append(process)
+    for i in pool:
+        re=qu.get()
+        data.append(re)
+    for i in pool:
+        i.join()'''
+
+    with Pool(processes=3) as pool:
+        #pool=Pool(processes=cpu)
+        for i in range(20):
+            pool.apply_async(GameGenerator.TrainGame,callback=log).get()
+        pool.close()
+        pool.join()
 
 # Resume our CTL training
 while epoch.numpy() < num_epochs:
