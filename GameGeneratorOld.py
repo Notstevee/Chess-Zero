@@ -23,11 +23,10 @@ class Trainer():#MCTSchess.tree):
     def maxdepth():
         return 100
         
-    def __init__(self,move='',totalval=0,visit=0,leafnodes=[],depth=0,P=0,history=[]):
+    def __init__(self,move='',totalval=0,visit=0,leafnodes=[],depth=0,P=0):
         self.totalval=totalval
         self.visit=visit
         self.P=P
-        self.history=history
         if type(move)==list:
             self.move=move[0]
             if len(move)>1:
@@ -48,7 +47,7 @@ class Trainer():#MCTSchess.tree):
     
     def SelfChooseMove(self,offset,history=[]):
         if offset!=self.depth:
-            ret=self.leafnodes[0].SelfChooseMove(offset,history=self.history+[self.move])
+            ret=self.leafnodes[0].SelfChooseMove(offset,history=history+[self.move])
             return ret
         else:
             pi=[]
@@ -57,7 +56,7 @@ class Trainer():#MCTSchess.tree):
                 pi.append(i.visit)
                 mask.append(FEN.ReturnArrLoc(i.move))
 
-            inputstack,gamestate,state=FEN.InputFeature(self.history+[self.move])
+            inputstack,gamestate,state=FEN.InputFeature(history+[self.move])
             output=[pi,mask,inputstack]
             
 
@@ -66,11 +65,10 @@ class Trainer():#MCTSchess.tree):
 
 
             k=[self.leafnodes[pi.index(max(pi))]]
-            k[0].history=self.history+[self.move]
             del self.leafnodes
             self.leafnodes=k
             print(k[0].move)
-            return output,gamestate,state,self.leafnodes[0]
+            return output,gamestate,state
 
     def expand(self,history):
 
@@ -112,14 +110,14 @@ class Trainer():#MCTSchess.tree):
     def traverse(self,lastmoves=[],offset=0):
         if self.leafnodes==[] and self.depth<self.maxdepth()+offset:
             if not self.visit:
-                self.expand(self.history+lastmoves+[self.move])
+                self.expand(lastmoves+[self.move])
                 return 1e-20
           
 
 
         else:
             if not self.visit:
-                m=self.roll(self.history+lastmoves+[self.move])
+                m=self.roll(lastmoves+[self.move])
                 self.visit+=1
                 self.totalval+=m
                 return m
@@ -131,16 +129,16 @@ class Trainer():#MCTSchess.tree):
                     for i in self.leafnodes:
                         temp.append(self.PUCT(tree=i,parentvisit=self.visit))
                     if all(temp):
-                        m=self.leafnodes[temp.index(max(temp))].traverse(self.history+lastmoves+[self.move],offset=offset)
+                        m=self.leafnodes[temp.index(max(temp))].traverse(lastmoves+[self.move],offset=offset)
                     else:
-                        m=self.leafnodes[np.random.randint(len(temp))].traverse(self.history+lastmoves+[self.move],offset=offset)
+                        m=self.leafnodes[np.random.randint(len(temp))].traverse(lastmoves+[self.move],offset=offset)
                     if not m==0:
                         self.totalval=self.totalval+m
                         self.visit+=1
                     return m
                 else:
                     
-                    m=self.roll(self.history+lastmoves)
+                    m=self.roll(lastmoves)
                     #print(self.visit,"here")
                     self.visit+=1
                     self.totalval+=m
@@ -186,23 +184,21 @@ def TrainGame():
     curr=Trainer()
     offset=0
     i=1
-    trav=0
     gamedump=[]
     #pi,mask,input=[],[],[]
     while game:
-        while trav<15*i:
+        while curr.visit<10*i:
             mm=time.time()
             curr.traverse(offset=offset)
             print(time.time()-mm,offset)
-            trav+=1
 
         k=curr.SelfChooseMove(offset)
         #print(k)
         offset+=1
         i+=1
         z=None
-        if  k[2]!=None: 
-            res=k[2].result()
+        if  k[-1]!=None: 
+            res=k[-1].result()
             if res=="1/2-1/2":
                 z=0.0
             elif res=="1-0":
@@ -215,7 +211,6 @@ def TrainGame():
         #mask.append(k[0][1])
         #input.append(k[0][2])
         gamedump.append([k[0][0],k[0][1],k[0][2]])
-        curr=k[3]
         if offset>512 or k[0][2][0,7,7,118]>100 or (k[0][2][0,7,7,110] and k[0][2][0,7,7,111]):
             z=0.0
             game=False
