@@ -26,8 +26,7 @@ import keras
 import numpy as np
 import time
 import os
-from google.protobuf import text_format
-from multiprocessing import util,Pool,cpu_count,freeze_support
+from multiprocessing import util,Pool,cpu_count,freeze_support,Lock,Process,Queue
 
 tnp.experimental_enable_numpy_behavior()
 
@@ -55,8 +54,12 @@ def write_filepath(filepath, task_type, task_id, cluster_spec):
 
 checkpoint_dir = ".\models"#os.path.join(util.get_temp_dir(), 'ckpt')
 
-num_epochs = 3
-num_steps_per_epoch=70
+num_epochs = 500000
+batch_size=4096
+min_factor=2
+max_factor=16
+cpu=3
+#cpu=int(cpu_count()*0.2//1)
 
 # Define Strategy
 #strategy = tf.distribute.MultiWorkerMirroredStrategy()
@@ -119,60 +122,65 @@ if latest_checkpoint:
 
 multi_worker_dataset=[]
 
-def gamegen(que):
-    ret=GameGenerator.TrainGame()
-    que.put(ret)
 
 def log(result):
     for i in result:
         multi_worker_dataset.append(i)
 
-cpu=4#int(cpu_count()*0.2//1)
+
 
 if __name__ == '__main__':
-    '''qu=Queue()
-    pool=[]
-    ret=[]
-    for i in range(cpu):
-        process=Process(target=gamegen,args=(qu,))
-        process.start()
-        pool.append(process)
-    for i in pool:
-        re=qu.get()
-        data.append(re)
-    for i in pool:
-        i.join()'''
 
-    with Pool(processes=3) as pool:
+    ite=1
+
+    with Pool(processes=cpu) as pool:
+
+        
+        
+
         #pool=Pool(processes=cpu)
-        for i in range(20):
-            pool.apply_async(GameGenerator.TrainGame,callback=log).get()
+        lst=[pool.apply_async(GameGenerator.TrainGame,callback=log) for i in range(100000000)]
+
+    # Resume our CTL training
+        while epoch.numpy() < num_epochs:
+            if len(multi_worker_dataset)<ite*batch_size*min_factor:
+                timee=time.time()
+                while len(multi_worker_dataset)<ite*batch_size*min_factor:
+                    print(f"\n\n\n\n\nGame steps simulated ({len(multi_worker_dataset)}) less than required minimum ({ite*batch_size*min_factor}). simulation running for {time.time()-timee} seconds.\n\n\n\n\n")
+                    time.sleep(10)
+
+                print("\n\n\n\n\nStarting epoch.\n\n\n\n\n")
+            
+            iterator = iter(multi_worker_dataset[i] for i in np.random.choice(len(multi_worker_dataset),batch_size,replace=False))
+            total_loss = 0.0
+            num_batches = 0
+            step_in_epoch.assign(0)
+
+            while step_in_epoch.numpy() < batch_size:
+                total_loss += train_step(iterator)
+                num_batches += 1
+                step_in_epoch.assign_add(1)
+
+            train_loss = total_loss / num_batches
+            print('Epoch: %d, train_loss: %f.'
+                            %(epoch.numpy(),  train_loss))
+
+
+
+            checkpoint_manager.save()
+            if not _is_chief(task_type, task_id, cluster_spec):
+                tf.io.gfile.rmtree(write_checkpoint_dir)
+
+            epoch.assign_add(1)
+            step_in_epoch.assign(0)
+            ite+=1
+            if len(multi_worker_dataset)>batch_size*max_factor:
+                multi_worker_dataset=multi_worker_dataset[batch_size*max_factor:]
+
+        for i in lst:
+            i.get()
         pool.close()
         pool.join()
-
-# Resume our CTL training
-while epoch.numpy() < num_epochs:
-  iterator = iter(multi_worker_dataset)
-  total_loss = 0.0
-  num_batches = 0
-
-  while step_in_epoch.numpy() < num_steps_per_epoch:
-    total_loss += train_step(iterator)
-    num_batches += 1
-    step_in_epoch.assign_add(1)
-
-  train_loss = total_loss / num_batches
-  print('Epoch: %d, train_loss: %f.'
-                %(epoch.numpy(),  train_loss))
-
-
-
-  checkpoint_manager.save()
-  if not _is_chief(task_type, task_id, cluster_spec):
-    tf.io.gfile.rmtree(write_checkpoint_dir)
-
-  epoch.assign_add(1)
-  step_in_epoch.assign(0)
 
 
 '''batch_size=4096
