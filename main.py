@@ -139,7 +139,7 @@ if __name__ == '__main__':
         
 
         #pool=Pool(processes=cpu)
-        lst=[pool.apply_async(GameGenerator.TrainGame,callback=log) for i in range(100000000)]
+        lst=[pool.apply_async(GameGenerator.TrainGame,callback=log) for i in range(100000)]
 
     # Resume our CTL training
         while epoch.numpy() < num_epochs:
