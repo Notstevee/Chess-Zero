@@ -61,6 +61,9 @@ max_factor=16
 cpu=3
 #cpu=int(cpu_count()*0.2//1)
 
+learn_schedule=tf.keras.optimizers.schedules.PiecewiseConstantDecay([100000,300000,500000],[0.2,0.02,0.002,0.0002])
+
+
 # Define Strategy
 #strategy = tf.distribute.MultiWorkerMirroredStrategy()
 with strategy.scope():
@@ -68,7 +71,7 @@ with strategy.scope():
     model =chesspy.NetTower()
 
     #multi_worker_dataset = strategy.experimental_distribute_datasets_from_function(data)
-    optimizer = keras.optimizers.SGD(learning_rate=0.2,momentum=0.9)
+    optimizer = keras.optimizers.SGD(learning_rate=learn_schedule,momentum=0.9)
 
 
 
