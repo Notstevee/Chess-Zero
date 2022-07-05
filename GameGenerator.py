@@ -60,11 +60,6 @@ class Trainer():#MCTSchess.tree):
             inputstack,gamestate,state=FEN.InputFeature(self.history+[self.move])
             output=[pi,mask,inputstack]
             
-
-
-            #file
-
-
             k=[self.leafnodes[pi.index(max(pi))]]
             k[0].history=self.history+[self.move]
             del self.leafnodes
@@ -91,7 +86,7 @@ class Trainer():#MCTSchess.tree):
                     PolicyVal.append(policy[FEN.ReturnArrLoc(str(i))])
 
 
-                PolicyVal=PolicyVal/np.sum(PolicyVal)
+                PolicyVal=(1-0.25)*PolicyVal/np.sum(PolicyVal)+0.25*np.random.dirichlet((0.3),len(PolicyVal))
 
             
             
@@ -190,10 +185,10 @@ def TrainGame():
     gamedump=[]
     #pi,mask,input=[],[],[]
     while game:
-        while trav<15*i:
-            mm=time.time()
+        while trav<800*i:   
+            #mm=time.time()
             curr.traverse(offset=offset)
-            print(time.time()-mm,offset)
+            #print(time.time()-mm,offset)      
             trav+=1
 
         k=curr.SelfChooseMove(offset)

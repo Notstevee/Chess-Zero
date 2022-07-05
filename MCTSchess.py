@@ -58,8 +58,7 @@ class tree:
                     PolicyVal.append(policy[FEN.ReturnArrLoc(str(i))])
 
 
-                PolicyVal=PolicyVal/np.sum(PolicyVal)
-
+                PolicyVal=(1-0.25)*PolicyVal/np.sum(PolicyVal)+0.25*np.random.dirichlet((0.3),len(PolicyVal))
             
             
 
