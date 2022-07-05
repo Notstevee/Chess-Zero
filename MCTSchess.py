@@ -58,7 +58,7 @@ class tree:
                     PolicyVal.append(policy[FEN.ReturnArrLoc(str(i))])
 
 
-                PolicyVal=(1-0.25)*PolicyVal/np.sum(PolicyVal)+0.25*np.random.dirichlet((0.3),len(PolicyVal))
+                PolicyVal=np.multiply(1-0.25,PolicyVal/np.sum(PolicyVal))+np.multiply(0.25,np.random.dirichlet([0.3],len(PolicyVal)))
             
             
 
@@ -127,10 +127,7 @@ class tree:
                     temp=[]
                     for i in self.leafnodes:
                         temp.append(self.PUCT(tree=i,parentvisit=self.visit))
-                    if all(temp):
-                        m=self.leafnodes[temp.index(max(temp))].traverse(lastmoves+[self.move],offset=offset)
-                    else:
-                        m=self.leafnodes[np.random.randint(len(temp))].traverse(lastmoves+[self.move],offset=offset)
+                    m=self.leafnodes[np.random.randint(len(temp))].traverse(lastmoves+[self.move],offset=offset)
                     if not m==0:
                         self.totalval=self.totalval+m
                         self.visit+=1
